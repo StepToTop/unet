@@ -1,4 +1,4 @@
-# Implementation of deep learning framework -- Unet, using Keras
+# Implementation of deep learning framework -- Unet, using Keras (master version)
 
 The architecture was inspired by [U-Net: Convolutional Networks for Biomedical Image Segmentation](http://lmb.informatik.uni-freiburg.de/people/ronneber/u-net/).
 
@@ -80,3 +80,15 @@ runs seamlessly on CPU and GPU.
 Read the documentation [Keras.io](http://keras.io/)
 
 Keras is compatible with: Python 2.7-3.5.
+
+## Recurrent U-Net 的实现, using Keras
+
+### 参考文献
+
+[Wang W, Yu K, Hugonot J, et al. Recurrent U-Net for resource-constrained segmentation[C]//Proceedings of the IEEE International Conference on Computer Vision. 2019: 2142-2151.](https://arxiv.org/pdf/1906.04913.pdf)
+
+### 使用训练平台
+
+[谷歌colab](https://colab.research.google.com/)
+
+### 优化网络结构

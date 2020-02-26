@@ -1,4 +1,4 @@
-import numpy as np 
+import numpy as np
 import os
 import skimage.io as io
 import skimage.transform as trans
@@ -6,61 +6,211 @@ import numpy as np
 from keras.models import *
 from keras.layers import *
 from keras.optimizers import *
+from keras import backend as K
 from keras.callbacks import ModelCheckpoint, LearningRateScheduler
 from keras import backend as keras
 
 
-def unet(pretrained_weights = None,input_size = (256,256,1)):
-    inputs = Input(input_size)
-    conv1 = Conv2D(64, 3, activation = 'relu', padding = 'same', kernel_initializer = 'he_normal')(inputs)
-    conv1 = Conv2D(64, 3, activation = 'relu', padding = 'same', kernel_initializer = 'he_normal')(conv1)
-    pool1 = MaxPooling2D(pool_size=(2, 2))(conv1)
-    conv2 = Conv2D(128, 3, activation = 'relu', padding = 'same', kernel_initializer = 'he_normal')(pool1)
-    conv2 = Conv2D(128, 3, activation = 'relu', padding = 'same', kernel_initializer = 'he_normal')(conv2)
-    pool2 = MaxPooling2D(pool_size=(2, 2))(conv2)
-    conv3 = Conv2D(256, 3, activation = 'relu', padding = 'same', kernel_initializer = 'he_normal')(pool2)
-    conv3 = Conv2D(256, 3, activation = 'relu', padding = 'same', kernel_initializer = 'he_normal')(conv3)
-    pool3 = MaxPooling2D(pool_size=(2, 2))(conv3)
-    conv4 = Conv2D(512, 3, activation = 'relu', padding = 'same', kernel_initializer = 'he_normal')(pool3)
-    conv4 = Conv2D(512, 3, activation = 'relu', padding = 'same', kernel_initializer = 'he_normal')(conv4)
-    drop4 = Dropout(0.5)(conv4)
-    pool4 = MaxPooling2D(pool_size=(2, 2))(drop4)
+def sim_unet(pretrained_weights=None, input_size=(256, 256, 1)):
+    init_filter = 64
+    depth = 4
+    inputs = Input(shape=input_size)
+    conv = inputs
+    down_layer = []
+    up_layer = []
+    for i in range(depth):
+        # conv = normal_conv(init_filter*(2**i), (3, 3), conv)
+        conv = rec_res_block(conv, init_filter*(2**i))
+        down_layer.append(conv)
+        conv = MaxPooling2D(pool_size=(2, 2))(conv)
+        print(conv.get_shape())
+        # if i == 2:
+        #     continue
+        #     emb = Embedding(4, 3)(conv)
+        #     gru = GRU(emb)
+        #     drop = Dropout(0.2)(gru)
+        #     dence = Dense(init_filter*(2**i), activation="relu")(drop)
+        #     drop = Dropout(0.2)(dence)
+        #
+        #     conv = Dense(1, activation="sigmoid")(dence)
+            # break
+            # print(conv.get_shape().as_list())
 
-    conv5 = Conv2D(1024, 3, activation = 'relu', padding = 'same', kernel_initializer = 'he_normal')(pool4)
-    conv5 = Conv2D(1024, 3, activation = 'relu', padding = 'same', kernel_initializer = 'he_normal')(conv5)
-    drop5 = Dropout(0.5)(conv5)
+            # gru1 = GRU (init_filter*(2**i), input_shape=conv.get_shape().as_list())(conv)
+# 到底了
+    conv = normal_conv(1024, (3, 3), conv)
+#     conv = recurrent(1024, (3, 3), conv)
+    print(conv.get_shape())
+    start_index = depth - 1
+    # start_index = depth - 2  # Recurrent Unit
+    for i in range(start_index, -1, -1):
+        merge_roll = up_and_concate(init_filter*(2**i), conv, down_layer[i])
+        # merge_roll = attention_up_and_concate(conv, down_layer[i])
+        conv = rec_res_block(merge_roll, init_filter*(2**i))
+        # conv = normal_conv(init_filter*(2**i), (3, 3), merge_roll)
 
-    up6 = Conv2D(512, 2, activation = 'relu', padding = 'same', kernel_initializer = 'he_normal')(UpSampling2D(size = (2,2))(drop5))
-    merge6 = concatenate([drop4,up6], axis = 3)
-    conv6 = Conv2D(512, 3, activation = 'relu', padding = 'same', kernel_initializer = 'he_normal')(merge6)
-    conv6 = Conv2D(512, 3, activation = 'relu', padding = 'same', kernel_initializer = 'he_normal')(conv6)
+    conv = Conv2D(2, (3, 3), activation='relu', padding='same')(conv)
+    conv = Conv2D(1, (1, 1), activation='sigmoid')(conv)
+    model = Model(input=inputs, output=conv)
 
-    up7 = Conv2D(256, 2, activation = 'relu', padding = 'same', kernel_initializer = 'he_normal')(UpSampling2D(size = (2,2))(conv6))
-    merge7 = concatenate([conv3,up7], axis = 3)
-    conv7 = Conv2D(256, 3, activation = 'relu', padding = 'same', kernel_initializer = 'he_normal')(merge7)
-    conv7 = Conv2D(256, 3, activation = 'relu', padding = 'same', kernel_initializer = 'he_normal')(conv7)
+    model.compile(optimizer=Adam(lr=1e-4), loss='binary_crossentropy', metrics=['accuracy'])
 
-    up8 = Conv2D(128, 2, activation = 'relu', padding = 'same', kernel_initializer = 'he_normal')(UpSampling2D(size = (2,2))(conv7))
-    merge8 = concatenate([conv2,up8], axis = 3)
-    conv8 = Conv2D(128, 3, activation = 'relu', padding = 'same', kernel_initializer = 'he_normal')(merge8)
-    conv8 = Conv2D(128, 3, activation = 'relu', padding = 'same', kernel_initializer = 'he_normal')(conv8)
-
-    up9 = Conv2D(64, 2, activation = 'relu', padding = 'same', kernel_initializer = 'he_normal')(UpSampling2D(size = (2,2))(conv8))
-    merge9 = concatenate([conv1,up9], axis = 3)
-    conv9 = Conv2D(64, 3, activation = 'relu', padding = 'same', kernel_initializer = 'he_normal')(merge9)
-    conv9 = Conv2D(64, 3, activation = 'relu', padding = 'same', kernel_initializer = 'he_normal')(conv9)
-    conv9 = Conv2D(2, 3, activation = 'relu', padding = 'same', kernel_initializer = 'he_normal')(conv9)
-    conv10 = Conv2D(1, 1, activation = 'sigmoid')(conv9)
-
-    model = Model(input = inputs, output = conv10)
-
-    model.compile(optimizer = Adam(lr = 1e-4), loss = 'binary_crossentropy', metrics = ['accuracy'])
-    
-    #model.summary()
-
-    if(pretrained_weights):
-    	model.load_weights(pretrained_weights)
+    if pretrained_weights:
+        model.load_weights(pretrained_weights)
 
     return model
 
 
+def seq_unet(pretrained_weights=None, input_size=(256, 256, 1)):
+    init_filter = 64
+    depth = 4
+    inputs = Input(shape=input_size)
+    conv = inputs
+    down_layer = []
+    for i in range(depth):
+        conv = normal_conv(init_filter*(2**i), (3, 3), conv)
+        # conv = rec_res_block(conv, init_filter*(2**i))
+        down_layer.append(conv)
+        conv = MaxPooling2D(pool_size=(2, 2))(conv)
+
+# 到底了
+    conv = normal_conv(1024, (3, 3), conv)
+    for i in range(depth-1, -1, -1):
+        # merge_roll = up_and_concate(init_filter*(2**i), conv, down_layer[i])
+        merge_roll = attention_up_and_concate(conv, down_layer[i])
+        # conv = rec_res_block(merge_roll, init_filter*(2**i))
+        conv = normal_conv(init_filter*(2**i), (3, 3), merge_roll)
+
+    conv = Conv2D(2, (3, 3), activation='relu', padding='same')(conv)
+    conv = Conv2D(1, (1, 1), activation='sigmoid')(conv)
+    model = Model(input=inputs, output=conv)
+
+    model.compile(optimizer=Adam(lr=1e-4), loss='binary_crossentropy', metrics=['accuracy'])
+
+    if pretrained_weights:
+        model.load_weights(pretrained_weights)
+
+
+def unet(pretrained_weights=None, input_size=(256, 256, 1)):
+    conv = Input(shape=input_size)
+    # for i in range(depth):
+    #     conv = normal_conv(init_filter*(2**i), (3, 3), conv)
+    #     down_layer.append(conv)
+    #     conv = MaxPooling2D(pool_size=(2, 2))(conv)
+
+    conv1 = normal_conv(64, (3, 3), conv)
+    pool1 = MaxPooling2D(pool_size=(2, 2))(conv1)
+    conv2 = normal_conv(128, (3, 3), pool1)
+    pool2 = MaxPooling2D(pool_size=(2, 2))(conv2)
+    conv3 = normal_conv(256, (3, 3), pool2)
+    pool3 = MaxPooling2D(pool_size=(2, 2))(conv3)
+    conv4 = normal_conv(512, (3, 3), pool3)
+    pool4 = MaxPooling2D(pool_size=(2, 2))(conv4)  # 尝试
+    # drop4 = Dropout(0.5)(conv4)
+    # pool4 = MaxPooling2D(pool_size=(2, 2))(drop4)
+
+# 到底了
+#     conv5 = normal_conv(1024, (3, 3), pool4)
+    conv5 = normal_conv(1024, (3, 3), pool4)
+    # drop5 = Dropout(0.5)(conv5)
+    drop5 = conv5  # 尝试
+    # attention_up_and_concate(drop5, conv4)
+
+# 爬升
+    # 1、加入注意力模块
+    # 2、Recurrent Residual卷积
+    # merge6 = up_and_concate(512, drop5, conv4)
+    merge6 = attention_up_and_concate(drop5, conv4)
+    conv6 = normal_conv(512, (3, 3), merge6)
+
+    # merge7 = up_and_concate(256, conv6, conv3)
+    merge7 = attention_up_and_concate(conv6, conv3)
+    conv7 = normal_conv(256, (3, 3), merge7)
+
+    # merge8 = up_and_concate(128, conv7, conv2)
+    merge8 = attention_up_and_concate(conv7, conv2)
+    conv8 = normal_conv(128, (3, 3), merge8)
+
+    # merge9 = up_and_concate(64, conv8, conv1)
+    merge9 = attention_up_and_concate(conv8, conv1)
+    conv9 = normal_conv(64, (3, 3), merge9)
+
+    conv9 = Conv2D(2, (3, 3), activation='relu', padding='same')(conv9)
+    conv10 = Conv2D(1, (1, 1), activation='sigmoid')(conv9)
+
+    model = Model(input=conv, output=conv10)
+
+    model.compile(optimizer=Adam(lr=1e-4), loss='binary_crossentropy', metrics=['accuracy'])
+
+    # model.summary()
+
+    if pretrained_weights:
+        model.load_weights(pretrained_weights)
+
+    return model
+
+
+def normal_conv(input_layer, filters, conv):
+    conv = Conv2D(input_layer, filters, activation='relu', padding='same')(conv)
+    return Conv2D(input_layer, filters, activation='relu', padding='same')(conv)
+
+
+def attention_block_2d(x, g, inter_channel):
+    theta_x = Conv2D(inter_channel, (1, 1))(x)
+    phi_g = Conv2D(inter_channel, (1, 1))(g)
+    f = Conv2D(inter_channel, (2, 2), activation='relu', padding='same')(add([theta_x, phi_g]))
+    rate = Conv2D(1, 1, activation='sigmoid', padding='same')(f)
+    att_x = multiply([x, rate])
+    return att_x
+
+
+def attention_up_and_concate(down_layer, layer):
+    in_channel = down_layer.get_shape().as_list()[3]
+    up = UpSampling2D(size=(2, 2))(down_layer)
+    up = Conv2D(in_channel // 2, (2, 2), activation='relu', padding='same')(up)
+    layer = attention_block_2d(x=layer, g=up, inter_channel=in_channel // 2)
+    return concatenate([up, layer], axis=3)
+
+
+def rec_res_block(input_layer, out_n_filters, kernel_size=(3, 3),
+                  padding='same'):
+    input_n_filters = input_layer.get_shape().as_list()[3]
+    if out_n_filters != input_n_filters:
+        skip_layer = Conv2D(out_n_filters, (3, 3), padding=padding)(
+            input_layer)
+    else:
+        skip_layer = input_layer
+    layer = skip_layer
+    for j in range(2):
+        for i in range(2):
+            if i == 0:
+                layer1 = Conv2D(out_n_filters, kernel_size, padding=padding, activation='relu')(
+                    layer)
+            layer1 = Conv2D(out_n_filters, kernel_size, padding=padding, activation='relu')(
+                add([layer1, layer]))
+        layer = layer1
+    out_layer = add([layer, skip_layer])
+    return out_layer
+
+
+def up_and_concate(input_layer, down_layer, layer):
+    # up = Conv2DTranspose(out_channel, [2, 2], strides=[2, 2])(down_layer)
+    up = UpSampling2D(size=(2, 2))(down_layer)
+    conv = Conv2D(input_layer, (2, 2), activation='relu', padding="same")(up)
+    my_concat = Lambda(lambda x: K.concatenate([x[0], x[1]], axis=3))
+    concate = my_concat([conv, layer])
+    return concate
+
+
+def recurrent(input_layer, filters, conv):
+    conv = Conv2D(input_layer, filters, activation='relu', padding='same')(conv)
+    # emb = Embedding(input_layer, 32)(conv)
+    # print(conv.get_shape())
+    # reshape_layer = Reshape(target_shape=(input_layer, input_layer))(conv)
+    gru = GRU(input_layer)(Reshape((256, 1024))(conv))
+    # print(gru.get_shape())
+    # conv = Reshape((1, 1, 1024))(gru)
+    # print(conv.get_shape())
+    # print(conv.size)
+
+    return Conv2D(input_layer, filters, activation='relu', padding='same')(conv)

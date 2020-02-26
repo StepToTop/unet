@@ -117,6 +117,11 @@ def labelVisualize(num_class,color_dict,img):
     return img_out / 255
 
 
+def saveResult1(save_path,npyfile,flag_multi_class = False,num_class = 2):
+    for i,item in enumerate(npyfile):
+        img = labelVisualize(num_class,COLOR_DICT,item) if flag_multi_class else int(item[:,:,0] * 255)
+        io.imsave(os.path.join(save_path,"%d_predict.png"%i),img)
+
 
 def saveResult(save_path,npyfile,flag_multi_class = False,num_class = 2):
     for i,item in enumerate(npyfile):
