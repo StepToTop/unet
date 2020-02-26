@@ -82,7 +82,7 @@ Read the documentation [Keras.io](http://keras.io/)
 Keras is compatible with: Python 2.7-3.5.
 
 ## Recurrent U-Net 的实现, using Keras
->毕业设计：使用Recurrent U-Net进行细胞图像分割
+>毕业设计：使用Recurrent U-Net进行细胞图像分割，将这个网络运用到这个场景
 ### 参考文献
 
 [Wang W, Yu K, Hugonot J, et al. Recurrent U-Net for resource-constrained segmentation[C]//Proceedings of the IEEE International Conference on Computer Vision. 2019: 2142-2151.](https://arxiv.org/pdf/1906.04913.pdf)
@@ -92,3 +92,4 @@ Keras is compatible with: Python 2.7-3.5.
 [谷歌colab](https://colab.research.google.com/)
 
 ### 优化网络结构
+
