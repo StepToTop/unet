@@ -14,6 +14,7 @@ def trainGenerator(batch_size, train_path, image_folder, mask_folder, aug_dict, 
         color_mode="grayscale",
         target_size=(256, 256),
         batch_size=batch_size,
+        class_mode=None,
         seed=seed)
     mask_generator = mask_datagen.flow_from_directory(
         train_path,
@@ -21,6 +22,7 @@ def trainGenerator(batch_size, train_path, image_folder, mask_folder, aug_dict, 
         color_mode="grayscale",
         target_size=(256, 256),
         batch_size=batch_size,
+        class_mode=None,
         seed=seed)
     train_generator = zip(image_generator, mask_generator)
     for (img, mask) in train_generator:
