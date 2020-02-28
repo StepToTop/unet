@@ -12,7 +12,7 @@ def sim_unet(pretrained_weights=None, input_size=(256, 256, 1)):
     up_layer = []
     for i in range(depth):
         # conv = normal_conv(init_filter*(2**i), (3, 3), conv)
-        conv = rec_res_block(conv, init_filter*(2**i))
+        conv = rec_res_block(conv, init_filter * (2 ** i))
         down_layer.append(conv)
         conv = MaxPooling2D(pool_size=(2, 2))(conv)
         print(conv.get_shape())
@@ -25,20 +25,20 @@ def sim_unet(pretrained_weights=None, input_size=(256, 256, 1)):
         #     drop = Dropout(0.2)(dence)
         #
         #     conv = Dense(1, activation="sigmoid")(dence)
-            # break
-            # print(conv.get_shape().as_list())
+        # break
+        # print(conv.get_shape().as_list())
 
-            # gru1 = GRU (init_filter*(2**i), input_shape=conv.get_shape().as_list())(conv)
-# 到底了
+        # gru1 = GRU (init_filter*(2**i), input_shape=conv.get_shape().as_list())(conv)
+    # 到底了
     conv = normal_conv(1024, (3, 3), conv)
-#     conv = recurrent(1024, (3, 3), conv)
+    #     conv = recurrent(1024, (3, 3), conv)
     print(conv.get_shape())
     start_index = depth - 1
     # start_index = depth - 2  # Recurrent Unit
     for i in range(start_index, -1, -1):
-        merge_roll = up_and_concate(init_filter*(2**i), conv, down_layer[i])
+        merge_roll = up_and_concate(init_filter * (2 ** i), conv, down_layer[i])
         # merge_roll = attention_up_and_concate(conv, down_layer[i])
-        conv = rec_res_block(merge_roll, init_filter*(2**i))
+        conv = rec_res_block(merge_roll, init_filter * (2 ** i))
         # conv = normal_conv(init_filter*(2**i), (3, 3), merge_roll)
 
     conv = Conv2D(2, (3, 3), activation='relu', padding='same')(conv)
@@ -60,18 +60,18 @@ def seq_unet(pretrained_weights=None, input_size=(256, 256, 1)):
     conv = inputs
     down_layer = []
     for i in range(depth):
-        conv = normal_conv(init_filter*(2**i), (3, 3), conv)
+        conv = normal_conv(init_filter * (2 ** i), (3, 3), conv)
         # conv = rec_res_block(conv, init_filter*(2**i))
         down_layer.append(conv)
         conv = MaxPooling2D(pool_size=(2, 2))(conv)
 
-# 到底了
+    # 到底了
     conv = normal_conv(1024, (3, 3), conv)
-    for i in range(depth-1, -1, -1):
+    for i in range(depth - 1, -1, -1):
         # merge_roll = up_and_concate(init_filter*(2**i), conv, down_layer[i])
         merge_roll = attention_up_and_concate(conv, down_layer[i])
         # conv = rec_res_block(merge_roll, init_filter*(2**i))
-        conv = normal_conv(init_filter*(2**i), (3, 3), merge_roll)
+        conv = normal_conv(init_filter * (2 ** i), (3, 3), merge_roll)
 
     conv = Conv2D(2, (3, 3), activation='relu', padding='same')(conv)
     conv = Conv2D(1, (1, 1), activation='sigmoid')(conv)
@@ -101,14 +101,14 @@ def unet(pretrained_weights=None, input_size=(256, 256, 1)):
     # drop4 = Dropout(0.5)(conv4)
     # pool4 = MaxPooling2D(pool_size=(2, 2))(drop4)
 
-# 到底了
-#     conv5 = normal_conv(1024, (3, 3), pool4)
+    # 到底了
+    #     conv5 = normal_conv(1024, (3, 3), pool4)
     conv5 = normal_conv(1024, (3, 3), pool4)
     # drop5 = Dropout(0.5)(conv5)
     drop5 = conv5  # 尝试
     # attention_up_and_concate(drop5, conv4)
 
-# 爬升
+    # 爬升
     # 1、加入注意力模块
     # 2、Recurrent Residual卷积
     # merge6 = up_and_concate(512, drop5, conv4)
