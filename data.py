@@ -5,24 +5,21 @@ import skimage.io as io
 import skimage.transform as trans
 
 
-def trainGenerator(batch_size, train_path, image_folder, mask_folder, aug_dict, image_color_mode="grayscale",
-                   mask_color_mode="grayscale", target_size=(256, 256), seed=1):
+def trainGenerator(batch_size, train_path, image_folder, mask_folder, aug_dict, seed=1):
     image_datagen = ImageDataGenerator(**aug_dict)
     mask_datagen = ImageDataGenerator(**aug_dict)
     image_generator = image_datagen.flow_from_directory(
         train_path,
         classes=[image_folder],
-        class_mode=None,
-        color_mode=image_color_mode,
-        target_size=target_size,
+        color_mode="grayscale",
+        target_size=(256, 256),
         batch_size=batch_size,
         seed=seed)
     mask_generator = mask_datagen.flow_from_directory(
         train_path,
         classes=[mask_folder],
-        class_mode=None,
-        color_mode=mask_color_mode,
-        target_size=target_size,
+        color_mode="grayscale",
+        target_size=(256, 256),
         batch_size=batch_size,
         seed=seed)
     train_generator = zip(image_generator, mask_generator)
