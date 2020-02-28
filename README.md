@@ -21,8 +21,6 @@ See dataPrepare.ipynb and data.py for detail.
 
 ### Model
 
-![img/u-net-architecture.png](img/u-net-architecture.png)
-
 This deep neural network is implemented with Keras functional API, which makes it extremely easy to experiment with different interesting architectures.
 
 Output from the network is a 512*512 which represents mask that should be learned. Sigmoid activation function
@@ -38,51 +36,12 @@ Loss function for the training is basically just a binary crossentropy.
 
 
 ---
-
-## How to use
-
-### Dependencies
-
-This tutorial depends on the following libraries:
-
-* Tensorflow
-* Keras >= 1.0
-
-Also, this code should be compatible with Python versions 2.7-3.5.
-
-### Run main.py
-
-You will see the predicted results of test image in data/membrane/test
-
-### Or follow notebook trainUnet
-
-
-
 ### Results
 
 Use the trained model to do segmentation on test images, the result is statisfactory.
 
-![img/0test.png](img/0test.png)
-
-![img/0label.png](img/0label.png)
-
-
-## About Keras
-
-Keras is a minimalist, highly modular neural networks library, written in Python and capable of running on top of either TensorFlow or Theano. It was developed with a focus on enabling fast experimentation. Being able to go from idea to result with the least possible delay is key to doing good research.
-
-Use Keras if you need a deep learning library that:
-
-allows for easy and fast prototyping (through total modularity, minimalism, and extensibility).
-supports both convolutional networks and recurrent networks, as well as combinations of the two.
-supports arbitrary connectivity schemes (including multi-input and multi-output training).
-runs seamlessly on CPU and GPU.
-Read the documentation [Keras.io](http://keras.io/)
-
-Keras is compatible with: Python 2.7-3.5.
-
 ## Recurrent U-Net 的实现, using Keras
->毕业设计：使用Recurrent U-Net进行细胞图像分割，将这个网络运用到这个场景
+
 ### 参考文献
 
 [Wang W, Yu K, Hugonot J, et al. Recurrent U-Net for resource-constrained segmentation[C]//Proceedings of the IEEE International Conference on Computer Vision. 2019: 2142-2151.](https://arxiv.org/pdf/1906.04913.pdf)
@@ -92,4 +51,3 @@ Keras is compatible with: Python 2.7-3.5.
 [谷歌colab](https://colab.research.google.com/)
 
 ### 优化网络结构
-

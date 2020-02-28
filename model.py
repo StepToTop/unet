@@ -1,14 +1,6 @@
-import numpy as np
-import os
-import skimage.io as io
-import skimage.transform as trans
-import numpy as np
 from keras.models import *
 from keras.layers import *
 from keras.optimizers import *
-from keras import backend as K
-from keras.callbacks import ModelCheckpoint, LearningRateScheduler
-from keras import backend as keras
 
 
 def sim_unet(pretrained_weights=None, input_size=(256, 256, 1)):
@@ -51,7 +43,7 @@ def sim_unet(pretrained_weights=None, input_size=(256, 256, 1)):
 
     conv = Conv2D(2, (3, 3), activation='relu', padding='same')(conv)
     conv = Conv2D(1, (1, 1), activation='sigmoid')(conv)
-    model = Model(input=inputs, output=conv)
+    model = Model(inputs=inputs, output=conv)
 
     model.compile(optimizer=Adam(lr=1e-4), loss='binary_crossentropy', metrics=['accuracy'])
 
@@ -83,7 +75,7 @@ def seq_unet(pretrained_weights=None, input_size=(256, 256, 1)):
 
     conv = Conv2D(2, (3, 3), activation='relu', padding='same')(conv)
     conv = Conv2D(1, (1, 1), activation='sigmoid')(conv)
-    model = Model(input=inputs, output=conv)
+    model = Model(inputs=inputs, output=conv)
 
     model.compile(optimizer=Adam(lr=1e-4), loss='binary_crossentropy', metrics=['accuracy'])
 
@@ -138,7 +130,7 @@ def unet(pretrained_weights=None, input_size=(256, 256, 1)):
     conv9 = Conv2D(2, (3, 3), activation='relu', padding='same')(conv9)
     conv10 = Conv2D(1, (1, 1), activation='sigmoid')(conv9)
 
-    model = Model(input=conv, output=conv10)
+    model = Model(inputs=conv, output=conv10)
 
     model.compile(optimizer=Adam(lr=1e-4), loss='binary_crossentropy', metrics=['accuracy'])
 
