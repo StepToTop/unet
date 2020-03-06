@@ -1,55 +1,29 @@
 from keras.models import *
 from keras.layers import *
 from keras.optimizers import *
+from keras import backend as K
+from sru import SRU
 
 
-def sim_unet(pretrained_weights=None, input_size=(256, 256, 1)):
+def sim_unet(input_size=(256, 256, 1)):
     init_filter = 64
     depth = 4
     inputs = Input(shape=input_size)
     conv = inputs
     down_layer = []
-    up_layer = []
     for i in range(depth):
-        # conv = normal_conv(init_filter*(2**i), (3, 3), conv)
         conv = rec_res_block(conv, init_filter * (2 ** i))
         down_layer.append(conv)
         conv = MaxPooling2D(pool_size=(2, 2))(conv)
-        print(conv.get_shape())
-        # if i == 2:
-        #     continue
-        #     emb = Embedding(4, 3)(conv)
-        #     gru = GRU(emb)
-        #     drop = Dropout(0.2)(gru)
-        #     dence = Dense(init_filter*(2**i), activation="relu")(drop)
-        #     drop = Dropout(0.2)(dence)
-        #
-        #     conv = Dense(1, activation="sigmoid")(dence)
-        # break
-        # print(conv.get_shape().as_list())
-
-        # gru1 = GRU (init_filter*(2**i), input_shape=conv.get_shape().as_list())(conv)
-    # 到底了
     conv = normal_conv(1024, (3, 3), conv)
-    #     conv = recurrent(1024, (3, 3), conv)
-    print(conv.get_shape())
     start_index = depth - 1
-    # start_index = depth - 2  # Recurrent Unit
     for i in range(start_index, -1, -1):
         merge_roll = up_and_concate(init_filter * (2 ** i), conv, down_layer[i])
-        # merge_roll = attention_up_and_concate(conv, down_layer[i])
         conv = rec_res_block(merge_roll, init_filter * (2 ** i))
-        # conv = normal_conv(init_filter*(2**i), (3, 3), merge_roll)
-
     conv = Conv2D(2, (3, 3), activation='relu', padding='same')(conv)
     conv = Conv2D(1, (1, 1), activation='sigmoid')(conv)
     model = Model(inputs=inputs, output=conv)
-
     model.compile(optimizer=Adam(lr=1e-4), loss='binary_crossentropy', metrics=['accuracy'])
-
-    if pretrained_weights:
-        model.load_weights(pretrained_weights)
-
     return model
 
 
@@ -168,8 +142,7 @@ def rec_res_block(input_layer, out_n_filters, kernel_size=(3, 3),
                   padding='same'):
     input_n_filters = input_layer.get_shape().as_list()[3]
     if out_n_filters != input_n_filters:
-        skip_layer = Conv2D(out_n_filters, (3, 3), padding=padding)(
-            input_layer)
+        skip_layer = Conv2D(out_n_filters, (3, 3), padding=padding)(input_layer)
     else:
         skip_layer = input_layer
     layer = skip_layer
@@ -185,24 +158,63 @@ def rec_res_block(input_layer, out_n_filters, kernel_size=(3, 3),
     return out_layer
 
 
+def normal_conv(input_layer, filters, conv):
+    conv = Conv2D(input_layer, filters, activation='relu', padding='same')(conv)
+    return Conv2D(input_layer, filters, activation='relu', padding='same')(conv)
+
+
 def up_and_concate(input_layer, down_layer, layer):
-    # up = Conv2DTranspose(out_channel, [2, 2], strides=[2, 2])(down_layer)
-    up = UpSampling2D(size=(2, 2))(down_layer)
+    up = UpSampling2D(size=2)(down_layer)
     conv = Conv2D(input_layer, (2, 2), activation='relu', padding="same")(up)
     my_concat = Lambda(lambda x: K.concatenate([x[0], x[1]], axis=3))
     concate = my_concat([conv, layer])
     return concate
 
 
-def recurrent(input_layer, filters, conv):
+def recurrent_conv(input_layer, filters, conv):
     conv = Conv2D(input_layer, filters, activation='relu', padding='same')(conv)
-    # emb = Embedding(input_layer, 32)(conv)
-    # print(conv.get_shape())
-    # reshape_layer = Reshape(target_shape=(input_layer, input_layer))(conv)
-    gru = GRU(input_layer)(Reshape((256, 1024))(conv))
-    # print(gru.get_shape())
-    # conv = Reshape((1, 1, 1024))(gru)
-    # print(conv.get_shape())
-    # print(conv.size)
+    reshape = Lambda(lambda x: tf.reshape(tensor=x, shape=(-1, conv.shape[1], conv.shape[2]*conv.shape[3])))(conv)
+    units = conv.shape[1]*conv.shape[2]*conv.shape[3]
+    # gru = GRU(units=int(units))(reshape)
+    print("test")
+    gru = SRU(units=int(units), dropout=0.0, recurrent_dropout=0.0, unroll=True)
+    gru = Dense(units)(gru)
+    print("Hello")
+    reshape = Lambda(lambda x: tf.reshape(tensor=x, shape=(-1, conv.shape[1], conv.shape[2], conv.shape[3])))(gru)
+    return Conv2D(input_layer, filters, activation='relu', padding='same')(reshape)
 
-    return Conv2D(input_layer, filters, activation='relu', padding='same')(conv)
+
+# def test_net(input_size=(256, 256, 1)):
+#     inputs = Input(shape=input_size)
+#     conv = Conv2D(64, 3, activation='relu', padding='same')(inputs)
+#     reshape = Lambda(reshape_tensor, arguments={'shape': (-1, conv.shape[1], conv.shape[2]*conv.shape[3])})(conv)
+#     gru = GRU(units=int(conv.shape[1]*conv.shape[2]*conv.shape[3]))(reshape)
+#     reshape = Lambda(reshape_tensor, arguments={'shape': (-1, conv.shape[1], conv.shape[2], conv.shape[3])})(gru)
+#     conv = Conv2D(64, 3, activation='relu', padding='same')(reshape)
+#     model = Model(inputs=inputs, output=conv)
+#     model.compile(optimizer=Adam(lr=1e-4), loss='binary_crossentropy', metrics=['accuracy'])
+#     return model
+
+
+def res_attention_Unet(input_size=(256, 256, 1)):
+    init_filter = 64
+    depth = 4
+    inputs = Input(shape=input_size)
+    conv = inputs
+    down_layer = []
+    for i in range(depth):
+        conv = rec_res_block(conv, init_filter * (2 ** i))
+        down_layer.append(conv)
+        conv = MaxPooling2D(pool_size=(2, 2))(conv)
+    conv = recurrent_conv(init_filter * (2 ** i), (3, 3), conv)
+    # conv = normal_conv(init_filter * (2 ** i), (3, 3), conv)
+    start_index = depth - 1
+    for i in range(start_index, -1, -1):
+        merge_roll = up_and_concate(init_filter * (2 ** i), conv, down_layer[i])
+        conv = rec_res_block(merge_roll, init_filter * (2 ** i))
+    conv = Conv2D(2, (3, 3), activation='relu', padding='same')(conv)
+    conv = Conv2D(1, (1, 1), activation='sigmoid')(conv)
+    model = Model(inputs=[inputs], output=[conv])
+    model.compile(optimizer=Adam(lr=1e-4), loss='binary_crossentropy', metrics=['accuracy'])
+    return model
+
