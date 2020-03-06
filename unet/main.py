@@ -3,7 +3,7 @@ from torch.utils.data import DataLoader
 from sklearn.metrics import accuracy_score
 from model import UNet
 from data import CellDataset
-
+# fasd
 
 def get_acc(output, label):
     # print(output, label)
