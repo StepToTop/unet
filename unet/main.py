@@ -12,7 +12,7 @@ def get_acc(output, label):
     return num_correct / total
 
 
-image_data = CellDataset(imgs_dir='./data/train/image/', masks_dir='./data/train/label/', scale=0.5)
+image_data = CellDataset(imgs_dir='../data/train/image/', masks_dir='../data/train/label/', scale=0.5)
 train_Data = DataLoader(image_data, batch_size=2, shuffle=True)
 criterion = torch.nn.BCEWithLogitsLoss().cuda()
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
